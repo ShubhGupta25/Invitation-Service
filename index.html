@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Papier & Bloom - Custom Wedding Invitations & Films</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&family=Dancing+Script:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Crimson+Text&family=Dancing+Script:wght@700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* Custom styles for fonts and animations */
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: #fefbf6; /* Soft pastel background */
+        color: #5d5d5d;
+        overflow-x: hidden; /* Prevent horizontal scroll from animations */
+      }
+
+      .logo-font,
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: "Dancing Script", cursive;
+      }
+
+      /* Keyframes for floating flower animations */
+      @keyframes float-up {
+        0% {
+          transform: translateY(100vh) rotate(0deg);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-10vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      @keyframes float-side {
+        0% {
+          transform: translateX(-10vw) translateY(50vh) rotate(0deg);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(110vw) translateY(60vh) rotate(-270deg);
+          opacity: 0;
+        }
+      }
+
+      /* Class for the floating flowers (now images) */
+      .floating-flower {
+        position: fixed;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0;
+        width: 70px; /* Adjust size */
+        height: auto;
+        animation-name: float-up;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+
+      /* Classes for scroll-triggered animations */
+      .reveal-on-scroll {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      }
+
+      .reveal-on-scroll.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Special traveling flower that moves with scroll */
+      #traveling-flower {
+        position: fixed;
+        z-index: 100;
+        width: 80px; /* Increased size */
+        height: auto;
+        transition: top 0.5s ease-out, left 0.5s ease-out,
+          transform 0.5s ease-out;
+        pointer-events: none;
+      }
+
+      /* Glassmorphism effect for the navbar */
+      nav {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .nav-link {
+        position: relative;
+        transition: color 0.3s;
+      }
+
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #d68c8c;
+        transition: width 0.3s ease-out;
+      }
+
+      .nav-link.active,
+      .nav-link:hover {
+        color: #d68c8c;
+      }
+
+      .nav-link.active::after,
+      .nav-link:hover::after {
+        width: 100%;
+      }
+
+      .gallery-img {
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+      }
+      .gallery-img:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      /* AI Section styles */
+      .ai-input {
+        background-color: #fff;
+        border: 1px solid #e5e7eb;
+        transition: ring 0.2s;
+      }
+      .ai-input:focus {
+        outline: none;
+        ring: 2px;
+        ring-color: #e1a0a0;
+        border-color: #e1a0a0;
+      }
+      #ai-result {
+        white-space: pre-wrap; /* Preserve line breaks from AI */
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        min-height: 150px;
+        transition: all 0.3s;
+      }
+      .loader {
+        width: 48px;
+        height: 48px;
+        border: 5px solid #fff;
+        border-bottom-color: #d68c8c;
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+      }
+
+      @keyframes rotation {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body class="relative">
+    <!-- Container for floating flowers in the background -->
+    <div
+      id="flower-container"
+      class="fixed top-0 left-0 w-full h-full pointer-events-none z-0"
+    ></div>
+
+    <!-- The special flower that travels between sections -->
+    <div id="traveling-flower">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        fill="#FFB6C1"
+      >
+        <path
+          d="M50 0 C45 15, 45 15, 50 25 C55 15, 55 15, 50 0 Z M75 25 C60 30, 60 30, 50 50 C60 70, 60 70, 75 75 C70 60, 70 60, 50 50 C30 60, 30 60, 25 75 C40 70, 40 70, 50 50 C30 30, 30 30, 25 25 C40 30, 40 30, 50 50 C70 40, 70 40, 75 25 Z M50 100 C55 85, 55 85, 50 75 C45 85, 45 85, 50 100 Z M0 50 C15 45, 15 45, 25 50 C15 55, 15 55, 0 50 Z M100 50 C85 45, 85 45, 75 50 C85 55, 85 55, 100 50 Z"
+        />
+      </svg>
+    </div>
+
+    <!-- Header and Navigation -->
+    <header class="fixed top-0 left-0 w-full z-50">
+      <nav
+        class="container mx-auto px-6 py-3 flex justify-between items-center rounded-b-xl"
+      >
+        <a href="#home" class="text-4xl text-gray-700 logo-font"
+          >Papier & Bloom</a
+        >
+        <div class="hidden md:flex space-x-8 text-gray-600 font-semibold">
+          <a href="#home" class="nav-link active">Home</a>
+          <a href="#services" class="nav-link">Services</a>
+          <a href="#gallery" class="nav-link">Gallery</a>
+          <a href="#testimonials" class="nav-link">Testimonials</a>
+          <a href="#pricing" class="nav-link">Pricing</a>
+          <a href="#ai-assistant" class="nav-link">AI Assistant</a>
+          <a href="#contact" class="nav-link">Contact</a>
+        </div>
+        <div class="md:hidden">
+          <button
+            id="mobile-menu-button"
+            class="text-gray-700 focus:outline-none"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16m-7 6h7"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      </nav>
+      <!-- Mobile Menu -->
+      <div
+        id="mobile-menu"
+        class="hidden md:hidden bg-white/80 backdrop-blur-lg rounded-b-xl mx-4"
+      >
+        <a
+          href="#home"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >Home</a
+        >
+        <a
+          href="#services"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >Services</a
+        >
+        <a
+          href="#gallery"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >Gallery</a
+        >
+        <a
+          href="#testimonials"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >Testimonials</a
+        >
+        <a
+          href="#pricing"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >Pricing</a
+        >
+        <a
+          href="#ai-assistant"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >AI Assistant</a
+        >
+        <a
+          href="#contact"
+          class="nav-link-mobile block text-center py-2 px-4 text-sm text-gray-700 hover:bg-[#FADADD]"
+          >Contact</a
+        >
+      </div>
+    </header>
+
+    <main class="relative z-10">
+      <!-- Home Section -->
+      <section
+        id="home"
+        class="min-h-screen flex items-center justify-center text-center px-4"
+        data-section-name="home"
+      >
+        <div class="max-w-3xl reveal-on-scroll">
+          <h1
+            class="text-5xl md:text-7xl font-bold text-gray-800 leading-tight"
+          >
+            Crafting Memories, One Invitation at a Time
+          </h1>
+          <p class="mt-6 text-lg md:text-xl text-gray-600">
+            From elegant digital cards to captivating video invitations, we
+            bring your special moments to life with artistry and passion. Let's
+            create something beautiful together.
+          </p>
+          <a
+            href="#services"
+            class="mt-10 inline-block bg-[#E1A0A0] text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-[#D68C8C] transition-colors duration-300 shadow-lg"
+            >Discover Our Magic</a
+          >
+        </div>
+      </section>
+
+      <!-- Services Section -->
+      <section id="services" class="py-24 px-4" data-section-name="services">
+        <div class="container mx-auto text-center">
+          <div class="reveal-on-scroll">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800">
+              Our Services
+            </h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              We offer a bouquet of services to make your announcements
+              unforgettable.
+            </p>
+          </div>
+          <div class="mt-16 grid md:grid-cols-3 gap-12">
+            <!-- Service Cards -->
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300 reveal-on-scroll"
+              style="transition-delay: 100ms"
+            >
+              <div
+                class="w-20 h-20 mx-auto bg-[#FADADD] rounded-full flex items-center justify-center"
+              >
+                <svg
+                  class="w-10 h-10 text-[#D68C8C]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 19v-8.93a2 2 0 01.89-1.66l7.71-4.42a2 2 0 012.79 1.66V19M6 19h12M6 19H4m2 0h1.4M18 19h2m-2 0h-1.4M6 19v-4.5M18 19v-4.5m-12 0h12"
+                  ></path>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold mt-6 text-gray-800">
+                Wedding Invitations
+              </h3>
+              <p class="mt-2 text-gray-600">
+                Exquisite digital and print invitations designed to match your
+                wedding theme perfectly.
+              </p>
+            </div>
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300 reveal-on-scroll"
+              style="transition-delay: 200ms"
+            >
+              <div
+                class="w-20 h-20 mx-auto bg-[#D4E6F1] rounded-full flex items-center justify-center"
+              >
+                <svg
+                  class="w-10 h-10 text-[#679BBD]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 10l4.55a2 2 0 01.95 1.7V17a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h7.55a2 2 0 011.7.95L15 10z"
+                  ></path>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold mt-6 text-gray-800">
+                Video Stories
+              </h3>
+              <p class="mt-2 text-gray-600">
+                Tell your love story with a beautifully animated video that will
+                charm your guests.
+              </p>
+            </div>
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300 reveal-on-scroll"
+              style="transition-delay: 300ms"
+            >
+              <div
+                class="w-20 h-20 mx-auto bg-[#D1F2EB] rounded-full flex items-center justify-center"
+              >
+                <svg
+                  class="w-10 h-10 text-[#58BCA8]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold mt-6 text-gray-800">
+                Party & Event Invites
+              </h3>
+              <p class="mt-2 text-gray-600">
+                From birthdays to corporate events, we create stylish
+                invitations for every occasion.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gallery Section -->
+      <section
+        id="gallery"
+        class="py-24 px-4 bg-[#F8F0E3]"
+        data-section-name="gallery"
+      >
+        <div class="container mx-auto text-center">
+          <div class="reveal-on-scroll">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800">
+              Our Gallery
+            </h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              A glimpse into the magical moments we've helped create.
+            </p>
+          </div>
+          <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div class="reveal-on-scroll" style="transition-delay: 100ms">
+              <img
+                src="https://images.unsplash.com/photo-1593539921359-29469a7146a3?q=80&w=1887&auto=format&fit=crop"
+                alt="Elegant wedding invitation suite with flowers"
+                class="rounded-lg shadow-md w-full h-full object-cover gallery-img"
+                onerror="this.onerror=null;this.src='https://wp-media-partyslate.imgix.net/2021/05/photo-b985f2fe-ac8d-41e1-b6d8-3e83c3a2f580.jpeg?auto=compress%2Cformat&ixlib=php-3.3.1';"
+              />
+            </div>
+            <div class="reveal-on-scroll" style="transition-delay: 200ms">
+              <img
+                src="https://images.unsplash.com/photo-1622040522815-a91646409743?q=80&w=1887&auto=format&fit=crop"
+                alt="Happy couple at their sunny outdoor wedding"
+                class="rounded-lg shadow-md w-full h-full object-cover gallery-img"
+                onerror="this.onerror=null;this.src='https://cdn.prod.website-files.com/61dc1708ea98aa46622ce24a/662f9219298c480cb515da90_Best%20Flowers%20For%20Wedding.webp';"
+              />
+            </div>
+            <div class="reveal-on-scroll" style="transition-delay: 300ms">
+              <img
+                src="https://images.unsplash.com/photo-1560896262-15f55a0a38a0?q=80&w=1887&auto=format&fit=crop"
+                alt="Modern event invitation design"
+                class="rounded-lg shadow-md w-full h-full object-cover gallery-img"
+                onerror="this.onerror=null;this.src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKdlOVP2Q6bgxVswuIf3dhxTLdUEq9A50xVUpnjxuKfXi73GlWAdBBpd3s8_a55GW_mVo&usqp=CAU';"
+              />
+            </div>
+            <div class="reveal-on-scroll" style="transition-delay: 400ms">
+              <img
+                src="https://images.unsplash.com/photo-1522075726284-1335759705d8?q=80&w=1887&auto=format&fit=crop"
+                alt="Classic wedding invitation with calligraphy"
+                class="rounded-lg shadow-md w-full h-full object-cover gallery-img"
+                onerror="this.onerror=null;this.src='https://wp-media-partyslate.imgix.net/2021/05/photo-b985f2fe-ac8d-41e1-b6d8-3e83c3a2f580.jpeg?auto=compress%2Cformat&ixlib=php-3.3.1';"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials Section -->
+      <section
+        id="testimonials"
+        class="py-24 px-4"
+        data-section-name="testimonials"
+      >
+        <div class="container mx-auto text-center">
+          <div class="reveal-on-scroll">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800">
+              Words of Love
+            </h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              See what our happy clients have to say about their experience.
+            </p>
+          </div>
+          <div class="mt-16 grid md:grid-cols-3 gap-8">
+            <!-- Testimonial Cards -->
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg reveal-on-scroll"
+              style="transition-delay: 100ms"
+            >
+              <p class="text-gray-600 italic">
+                "The video invitation was beyond our dreams! It captured our
+                story so perfectly and our guests were absolutely wowed. Thank
+                you for making our announcement so special."
+              </p>
+              <h4 class="font-bold text-lg mt-6 text-[#D68C8C]">
+                - Jessica & Tom
+              </h4>
+            </div>
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg reveal-on-scroll"
+              style="transition-delay: 200ms"
+            >
+              <p class="text-gray-600 italic">
+                "Incredible attention to detail and so easy to work with. They
+                took my vague ideas and turned them into a stunning reality.
+                Highly recommended for any event!"
+              </p>
+              <h4 class="font-bold text-lg mt-6 text-[#D68C8C]">- Sarah L.</h4>
+            </div>
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg reveal-on-scroll"
+              style="transition-delay: 300ms"
+            >
+              <p class="text-gray-600 italic">
+                "Fast, professional, and breathtakingly beautiful designs. The
+                digital invitations were a huge hit and so convenient for our
+                guests. A five-star experience!"
+              </p>
+              <h4 class="font-bold text-lg mt-6 text-[#D68C8C]">
+                - Michael & David
+              </h4>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing Section -->
+      <section
+        id="pricing"
+        class="py-24 px-4 bg-[#F8F0E3]"
+        data-section-name="pricing"
+      >
+        <div class="container mx-auto text-center">
+          <div class="reveal-on-scroll">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800">
+              Our Packages
+            </h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Choose the perfect package to begin your creative journey with us.
+            </p>
+          </div>
+          <div class="mt-16 grid md:grid-cols-3 gap-8 items-center">
+            <!-- Pricing Cards -->
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg reveal-on-scroll"
+              style="transition-delay: 100ms"
+            >
+              <h3 class="text-2xl font-bold text-gray-800">Blossom</h3>
+              <p class="text-4xl font-bold my-4 text-[#679BBD]">$199</p>
+              <ul class="text-gray-600 space-y-2">
+                <li>Custom Digital Invite</li>
+                <li>2 Design Revisions</li>
+                <li>Mobile Optimized</li>
+                <li>Standard Animation</li>
+              </ul>
+              <button
+                class="mt-8 w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full hover:bg-gray-300 transition-colors"
+              >
+                Choose Plan
+              </button>
+            </div>
+            <div
+              class="bg-white p-10 rounded-2xl shadow-2xl transform scale-105 reveal-on-scroll"
+              style="transition-delay: 200ms"
+            >
+              <p
+                class="bg-[#E1A0A0] text-white text-sm font-bold tracking-widest uppercase rounded-full py-1 px-4 inline-block mb-4"
+              >
+                Most Popular
+              </p>
+              <h3 class="text-3xl font-bold text-gray-800">Gardenia</h3>
+              <p class="text-5xl font-bold my-4 text-[#D68C8C]">$349</p>
+              <ul class="text-gray-600 space-y-2">
+                <li>Animated Video Invite (30s)</li>
+                <li>Custom Illustrations</li>
+                <li>Unlimited Revisions</li>
+                <li>Background Music</li>
+              </ul>
+              <button
+                class="mt-8 w-full bg-[#E1A0A0] text-white font-bold py-3 px-6 rounded-full hover:bg-[#D68C8C] transition-colors"
+              >
+                Choose Plan
+              </button>
+            </div>
+            <div
+              class="bg-white p-8 rounded-2xl shadow-lg reveal-on-scroll"
+              style="transition-delay: 300ms"
+            >
+              <h3 class="text-2xl font-bold text-gray-800">Evergreen</h3>
+              <p class="text-4xl font-bold my-4 text-[#58BCA8]">$499</p>
+              <ul class="text-gray-600 space-y-2">
+                <li>Full Story Video (60s+)</li>
+                <li>Matching Digital Suite</li>
+                <li>Print-ready Files</li>
+                <li>Priority Support</li>
+              </ul>
+              <button
+                class="mt-8 w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full hover:bg-gray-300 transition-colors"
+              >
+                Choose Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Wording Assistant Section -->
+      <section
+        id="ai-assistant"
+        class="py-24 px-4"
+        data-section-name="ai-assistant"
+      >
+        <div class="container mx-auto text-center">
+          <div class="reveal-on-scroll">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800">
+              ✨ Invitation Wording Assistant
+            </h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+              Struggling to find the perfect words? Let our AI assistant help
+              you craft a beautiful message. Just provide a few details below.
+            </p>
+          </div>
+          <div
+            class="mt-12 max-w-4xl mx-auto bg-white/70 backdrop-blur-md p-8 rounded-2xl shadow-lg reveal-on-scroll"
+          >
+            <div class="grid md:grid-cols-2 gap-6 text-left">
+              <div>
+                <label for="partner1" class="font-semibold text-gray-700"
+                  >Partner 1 Name</label
+                >
+                <input
+                  type="text"
+                  id="partner1"
+                  class="w-full mt-2 p-3 rounded-lg ai-input"
+                  placeholder="e.g., Alex"
+                />
+              </div>
+              <div>
+                <label for="partner2" class="font-semibold text-gray-700"
+                  >Partner 2 Name</label
+                >
+                <input
+                  type="text"
+                  id="partner2"
+                  class="w-full mt-2 p-3 rounded-lg ai-input"
+                  placeholder="e.g., Jamie"
+                />
+              </div>
+              <div>
+                <label for="eventDate" class="font-semibold text-gray-700"
+                  >Event Date & Time</label
+                >
+                <input
+                  type="text"
+                  id="eventDate"
+                  class="w-full mt-2 p-3 rounded-lg ai-input"
+                  placeholder="e.g., Saturday, June 28th, 2025 at 4 PM"
+                />
+              </div>
+              <div>
+                <label for="venue" class="font-semibold text-gray-700"
+                  >Venue</label
+                >
+                <input
+                  type="text"
+                  id="venue"
+                  class="w-full mt-2 p-3 rounded-lg ai-input"
+                  placeholder="e.g., The Grand Garden, Paris"
+                />
+              </div>
+              <div class="md:col-span-2">
+                <label for="tone" class="font-semibold text-gray-700"
+                  >Desired Tone</label
+                >
+                <select id="tone" class="w-full mt-2 p-3 rounded-lg ai-input">
+                  <option>Formal & Traditional</option>
+                  <option>Casual & Relaxed</option>
+                  <option>Romantic & Heartfelt</option>
+                  <option>Modern & Minimalist</option>
+                  <option>Fun & Whimsical</option>
+                </select>
+              </div>
+            </div>
+            <button
+              id="generate-wording-btn"
+              class="mt-8 bg-[#E1A0A0] text-white font-bold py-3 px-10 rounded-full text-lg hover:bg-[#D68C8C] transition-colors duration-300 shadow-lg"
+            >
+              Generate Wording
+            </button>
+            <div id="ai-result-container" class="mt-8 text-left">
+              <div id="ai-result" class="text-gray-700">
+                Your generated invitation text will appear here...
+              </div>
+              <button
+                id="copy-text-btn"
+                class="hidden mt-4 bg-gray-600 text-white font-bold py-2 px-6 rounded-full hover:bg-gray-700 transition-colors"
+              >
+                Copy Text
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact Section -->
+      <section
+        id="contact"
+        class="py-24 px-4 bg-[#F8F0E3] flex items-center"
+        data-section-name="contact"
+      >
+        <div class="container mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <div class="reveal-on-scroll">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800">
+              Let's Get in Touch
+            </h2>
+            <p class="mt-4 text-lg text-gray-600">
+              Have a question or ready to start your project? Send us a message,
+              and we'll be thrilled to hear from you.
+            </p>
+            <p class="mt-8 text-gray-700">
+              <strong>Email:</strong> hello@papierandbloom.com
+            </p>
+            <p class="mt-2 text-gray-700">
+              <strong>Phone:</strong> +1 (234) 567-890
+            </p>
+          </div>
+          <div
+            class="bg-white p-8 rounded-2xl shadow-xl reveal-on-scroll"
+            style="transition-delay: 200ms"
+          >
+            <form>
+              <div class="mb-4">
+                <label for="name" class="block text-gray-700 font-medium mb-2"
+                  >Name</label
+                >
+                <input
+                  type="text"
+                  id="name"
+                  class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E1A0A0]"
+                />
+              </div>
+              <div class="mb-4">
+                <label for="email" class="block text-gray-700 font-medium mb-2"
+                  >Email</label
+                >
+                <input
+                  type="email"
+                  id="email"
+                  class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E1A0A0]"
+                />
+              </div>
+              <div class="mb-4">
+                <label
+                  for="message"
+                  class="block text-gray-700 font-medium mb-2"
+                  >Message</label
+                >
+                <textarea
+                  id="message"
+                  rows="4"
+                  class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E1A0A0]"
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                class="w-full bg-[#E1A0A0] text-white font-bold py-3 px-6 rounded-full hover:bg-[#D68C8C] transition-colors duration-300"
+              >
+                Send Message
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- MOBILE MENU TOGGLE ---
+        const mobileMenuButton = document.getElementById("mobile-menu-button");
+        const mobileMenu = document.getElementById("mobile-menu");
+        mobileMenuButton.addEventListener("click", () => {
+          mobileMenu.classList.toggle("hidden");
+        });
+        document.querySelectorAll(".nav-link-mobile").forEach((link) => {
+          link.addEventListener("click", () =>
+            mobileMenu.classList.add("hidden")
+          );
+        });
+
+        // --- ANIMATION ON SCROLL ---
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("visible");
+              }
+            });
+          },
+          {
+            threshold: 0.1,
+          }
+        );
+
+        const elementsToReveal = document.querySelectorAll(".reveal-on-scroll");
+        elementsToReveal.forEach((el) => observer.observe(el));
+
+        // --- FLOATING FLOWERS ---
+        const flowerContainer = document.getElementById("flower-container");
+        const flowerSvgs = [
+          // Flower Style 1 (Daisy-like)
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#ffffff" stroke="#E1A0A0" stroke-width="2"><circle cx="50" cy="50" r="10" fill="#FFD700"/><path d="M50 35 A 20 20 0 0 1 50 65 A 20 20 0 0 1 50 35 Z M35 50 A 20 20 0 0 1 65 50 A 20 20 0 0 1 35 50 Z M40 40 A 20 20 0 0 1 60 60 A 20 20 0 0 1 40 40 Z M60 40 A 20 20 0 0 1 40 60 A 20 20 0 0 1 60 40 Z" transform="rotate(45 50 50)"/></svg>',
+          // Flower Style 2 (Simple Petals)
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#FADADD"><path d="M50 0 A 30 30 0 0 1 80 20 L 50 50 Z M 20 20 A 30 30 0 0 1 50 0 L 50 50 Z M 20 80 A 30 30 0 0 1 50 100 L 50 50 Z M 80 80 A 30 30 0 0 1 50 100 L 50 50 Z M 0 50 A 30 30 0 0 1 20 20 L 50 50 Z M 100 50 A 30 30 0 0 1 80 20 L 50 50 Z M 0 50 A 30 30 0 0 1 20 80 L 50 50 Z M 100 50 A 30 30 0 0 1 80 80 L 50 50 Z "/></svg>',
+          // Flower Style 3 (Tulip-like)
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#D4E6F1"><path d="M30 100 C 10 70, 10 70, 50 40 C 90 70, 90 70, 70 100 Z M 50 30 C 40 10, 40 10, 50 0 C 60 10, 60 10, 50 30 Z"/></svg>',
+        ];
+        const numFlowers = 15;
+
+        for (let i = 0; i < numFlowers; i++) {
+          const flower = document.createElement("div");
+          flower.classList.add("floating-flower");
+          flower.innerHTML = flowerSvgs[i % flowerSvgs.length];
+          flower.style.left = `${Math.random() * 100}vw`;
+          flower.style.width = `${Math.random() * 30 + 30}px`;
+          flower.style.animationDuration = `${Math.random() * 20 + 15}s`;
+          flower.style.animationDelay = `${Math.random() * 15}s`;
+          if (i % 3 === 0) {
+            flower.style.animationName = "float-side";
+          }
+          flowerContainer.appendChild(flower);
+        }
+
+        // --- ACTIVE NAV LINK & TRAVELING FLOWER ON SCROLL ---
+        const sections = document.querySelectorAll(
+          "section[data-section-name]"
+        );
+        const navLinks = document.querySelectorAll(".nav-link");
+        const travelingFlower = document.getElementById("traveling-flower");
+
+        window.addEventListener("scroll", () => {
+          let current = "home";
+          const scrollY = window.scrollY;
+
+          sections.forEach((section) => {
+            const sectionTop = section.offsetTop - 150;
+            if (scrollY >= sectionTop) {
+              current = section.getAttribute("id");
+            }
+          });
+
+          navLinks.forEach((link) => {
+            link.classList.remove("active");
+            if (link.getAttribute("href") === `#${current}`) {
+              link.classList.add("active");
+            }
+          });
+
+          const currentSectionEl = document.getElementById(current);
+          if (currentSectionEl) {
+            const rect = currentSectionEl.getBoundingClientRect();
+            const yPosition = rect.top + window.scrollY + 120;
+            travelingFlower.style.top = `${yPosition}px`;
+            travelingFlower.style.left = `2vw`;
+            travelingFlower.style.transform = `rotate(${scrollY / 4}deg)`;
+          }
+        });
+
+        window.dispatchEvent(new Event("scroll"));
+
+        // --- GEMINI API - INVITATION WORDING ASSISTANT ---
+        const generateBtn = document.getElementById("generate-wording-btn");
+        const resultDiv = document.getElementById("ai-result");
+        const copyBtn = document.getElementById("copy-text-btn");
+
+        generateBtn.addEventListener("click", async () => {
+          // 1. Get user inputs
+          const partner1 = document.getElementById("partner1").value;
+          const partner2 = document.getElementById("partner2").value;
+          const eventDate = document.getElementById("eventDate").value;
+          const venue = document.getElementById("venue").value;
+          const tone = document.getElementById("tone").value;
+
+          if (!partner1 || !partner2 || !eventDate || !venue) {
+            resultDiv.textContent =
+              "Please fill out all the details to generate your invitation wording.";
+            return;
+          }
+
+          // 2. Show loading state
+          resultDiv.innerHTML =
+            '<div class="flex justify-center items-center"><div class="loader"></div></div>';
+          generateBtn.disabled = true;
+          generateBtn.textContent = "Generating...";
+          copyBtn.classList.add("hidden");
+
+          // 3. Construct the prompt for the Gemini API
+          const prompt = `
+                    You are a creative assistant for a luxury wedding invitation company called "Papier & Bloom".
+                    A client needs help writing the text for their wedding invitation.
+                    Generate a beautiful and elegant wedding invitation text based on the following details:
+                    - Couple's Names: ${partner1} and ${partner2}
+                    - Wedding Date and Time: ${eventDate}
+                    - Venue: ${venue}
+                    - Desired Tone: ${tone}
+
+                    The invitation should be welcoming and heartfelt. It should clearly state the names, request the presence of the guest, and provide the date, time, and location. 
+                    You can structure it with a classic format, for example:
+                    "Together with their families, [Partner 1] and [Partner 2] invite you to celebrate their marriage..."
+                    or a more modern approach depending on the tone.
+                    End with a line about a reception to follow.
+                `;
+
+          // 4. Call the Gemini API
+          const apiKey = ""; // This will be handled by the environment
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+          let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+          const payload = { contents: chatHistory };
+
+          try {
+            const response = await fetch(apiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              throw new Error(`API Error: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (
+              result.candidates &&
+              result.candidates.length > 0 &&
+              result.candidates[0].content &&
+              result.candidates[0].content.parts &&
+              result.candidates[0].content.parts.length > 0
+            ) {
+              const generatedText = result.candidates[0].content.parts[0].text;
+              resultDiv.textContent = generatedText.trim();
+              copyBtn.classList.remove("hidden");
+            } else {
+              throw new Error("Received an invalid response from the API.");
+            }
+          } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            resultDiv.textContent =
+              "Sorry, we couldn't generate the wording at this moment. Please try again later.";
+          } finally {
+            // 5. Reset button state
+            generateBtn.disabled = false;
+            generateBtn.textContent = "Generate Wording";
+          }
+        });
+
+        // --- COPY TEXT FUNCTIONALITY ---
+        copyBtn.addEventListener("click", () => {
+          const textToCopy = resultDiv.textContent;
+          const tempTextarea = document.createElement("textarea");
+          tempTextarea.value = textToCopy;
+          document.body.appendChild(tempTextarea);
+          tempTextarea.select();
+          try {
+            document.execCommand("copy"); // Using execCommand for iframe compatibility
+            copyBtn.textContent = "Copied!";
+            setTimeout(() => {
+              copyBtn.textContent = "Copy Text";
+            }, 2000);
+          } catch (err) {
+            console.error("Failed to copy text: ", err);
+            copyBtn.textContent = "Error Copying";
+          }
+          document.body.removeChild(tempTextarea);
+        });
+      });
+    </script>
+  </body>
+</html>
